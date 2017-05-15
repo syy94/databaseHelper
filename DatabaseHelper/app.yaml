@@ -3,5 +3,13 @@ runtime: python27
 api_version: 1
 
 handlers:
+- url: /favicon\.ico
+  static_files: img/favicon.ico
+  upload: favicon.ico
+
+- url: /updateData.*
+  script: cron/updateData.py
+  login: admin
+
 - url: /.*
-  script: helloworld.app
+  script: main.app

@@ -1,0 +1,4 @@
+cron:
+- description: yearly data.gov data refresh
+  url: /updateData
+  schedule: every monday of feb 17:00

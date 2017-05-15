@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, render_template
 import database
 
 from database import model_jae
@@ -15,9 +15,9 @@ def main():
         database.insertCourse('c123'+str(i+1), 'NMA', 'B', 'difasd', 'dip in ketchup', '', 'asdasdasdasd')
     
     
-    qry = model_jae.query()
+    #qry = model_jae.query()
 
-    return str(qry.fetch())
+    return render_template('index.html')
  
 @app.errorhandler(500)
 def server_error(e):
