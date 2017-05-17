@@ -1,28 +1,35 @@
-from flask import Flask, render_template
 import database
 
-from database import model_jae
+from string import ascii_lowercase
+from flask import Flask, render_template
+from database import entityListBuilder
 
 app = Flask(__name__)
 
-from google.appengine.ext import ndb
-guestbook_key = ndb.Key('Guestbook', 'default_guestbook')
-
-@app.route('/')   # URL '/' to be handled by main() route handler
+@app.route('/')  # URL '/' to be handled by main() route handler
 def main():
-    for i in range(10):
-        database.insertCourse('c123'+str(i), 'NMA', 'A', 'difasd', 'dip in curry', '', 'asdasdasdasd')
-        database.insertCourse('c123'+str(i+1), 'NMA', 'B', 'difasd', 'dip in ketchup', '', 'asdasdasdasd')
     
+    # logging.info(str(database.get_course_list(3, 0)) + '<br><br>' + str(database.get_course_list(3, 0, -model_jae.poly, -model_jae.course_type)))
+    return str(database.get_course_by_id('a'))
     
-    #qry = model_jae.query()
-
-    return render_template('index.html')
+    return render_template('index.html') 
  
+@app.route('/serviceList')
+def serviceList():
+
+    builder = entityListBuilder()
+    
+    for c in ascii_lowercase:
+        builder.add_entity(c, c + 'BP2', c + 'S', c + 'bird', c + 'street', 'info?', c + 'childhood')
+      
+    builder.add_to_database()
+    
+    return 'refreshed database'
+    
+
 @app.errorhandler(500)
 def server_error(e):
     return str(e)
  
 if __name__ == '__main__':  # Script executed directly?
     app.run()  # Launch built-in web server and run this Flask webapp
-    
