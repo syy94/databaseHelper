@@ -2,7 +2,7 @@
 <?eclipse-pydev version="1.0"?><pydev_project>
 <pydev_variables_property name="org.python.pydev.PROJECT_VARIABLE_SUBSTITUTION">
 <key>GOOGLE_APP_ENGINE</key>
-<value>C:\Users\Choony\AppData\Local\Google\Cloud SDK\google-cloud-sdk\platform\google_appengine</value>
+<value>C:\Program Files (x86)\Google\Cloud SDK\google-cloud-sdk\platform\google_appengine</value>
 </pydev_variables_property>
 <pydev_pathproperty name="org.python.pydev.PROJECT_SOURCE_PATH">
 <path>/${PROJECT_DIR_NAME}</path>
@@ -62,5 +62,5 @@
 <path>${GOOGLE_APP_ENGINE}/lib/yaml/lib</path>
 </pydev_pathproperty>
 <pydev_property name="org.python.pydev.PYTHON_PROJECT_VERSION">python 2.7</pydev_property>
-<pydev_property name="org.python.pydev.PYTHON_PROJECT_INTERPRETER">Default</pydev_property>
+<pydev_property name="org.python.pydev.PYTHON_PROJECT_INTERPRETER">C:\Users\Vaio\workspace\env\Scripts\python.exe</pydev_property>
 </pydev_project>
