@@ -2,7 +2,8 @@ import database
 
 from string import ascii_lowercase
 from flask import Flask, render_template
-from database import entityListBuilder
+from database import entityListBuilder, model_jae
+import logging
 
 app = Flask(__name__)
 
@@ -10,6 +11,7 @@ app = Flask(__name__)
 def main():
     
     # logging.info(str(database.get_course_list(3, 0)) + '<br><br>' + str(database.get_course_list(3, 0, -model_jae.poly, -model_jae.course_type)))
+    logging.info(model_jae.get_properties_from_str('poly'))
     return str(database.get_course_by_id('a'))
     
     return render_template('index.html') 

@@ -78,18 +78,8 @@ class model_jae(ndb.Model):
 
         for prop in properties:
             if prop[0] is '-':
-                _properties.append(_dict[prop[1:]])
+                _properties.append(model_jae._properties[prop[1:]])
             else:
-                _properties.append(_dict[prop])
+                _properties.append(model_jae._properties[prop])
             
         return _properties
-    
-_dict = {
-    'poly' : model_jae.poly,
-    'id' : model_jae.id,
-    'aggr_type' : model_jae.aggr_type,
-    'name' : model_jae.name,
-    'award' : model_jae.award,
-    'ext_info' : model_jae.ext_info,
-    'course_type' : model_jae.course_type
-}
