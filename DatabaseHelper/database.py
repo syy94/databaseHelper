@@ -1,7 +1,7 @@
 from google.appengine.ext import ndb
 
-def insertCourse(course_id, poly, aggr_type, name, award, ext_info, course_type):
-    entity = model_jae.create_entity(course_id, poly, aggr_type, name, award, ext_info, course_type)
+def insertCourse(course_id, poly, score, name, url, ext_info, course_type, year):
+    entity = model_jae.create_entity(course_id, poly, score, name, url, ext_info, course_type, year)
     return entity.put()
 
 def get_course_by_id(course_id):
@@ -26,8 +26,8 @@ class entityListBuilder:
     def __init__(self):
         self.list_entity = []
      
-    def add_entity(self, course_id, poly, aggr_type, name, award, ext_info, course_type):
-        entity = model_jae.create_entity(course_id, poly, aggr_type, name, award, ext_info, course_type)
+    def add_entity(self, course_id, poly, score, name, url, ext_info, course_type, year):
+        entity = model_jae.create_entity(course_id, poly, score, name, url, ext_info, course_type, year)
         
         self.list_entity.append(entity)
         
@@ -46,23 +46,25 @@ class entityListBuilder:
         del self.list_entity[:]
         
 class model_jae(ndb.Model):    
-    poly = ndb.StringProperty() # StringProperty is indexed (increases write ops)
-    id = ndb.StringProperty()
-    aggr_type = ndb.StringProperty()
-    name = ndb.StringProperty()
-    award = ndb.TextProperty() # TextProperty is not indexed (unable to be filtered by query)
-    ext_info = ndb.StringProperty()
+    poly = ndb.StringProperty() # Polytechnic Acronym
+    id = ndb.StringProperty() # Course ID
+    score = ndb.StringProperty() # O' level Score Requirement
+    name = ndb.StringProperty() # Course Name
+    url = ndb.TextProperty() # Course URL Info
+    ext_info = ndb.StringProperty() # Additional info
     course_type = ndb.StringProperty()  # course_type = applied sciences, etc
+    year = ndb.StringProperty() # The year this entry is collected
     
     '''method to easily create an entity'''
     @staticmethod
-    def create_entity(course_id, poly, aggr_type, name, award, ext_info, course_type):
+    def create_entity(course_id, poly, score, name, url, ext_info, course_type, year):
         entity = model_jae()
         entity.poly = poly;
-        entity.aggr_type = aggr_type;
+        entity.score = score;
         entity.name = name;
-        entity.award = award;
+        entity.url = url;
         entity.course_type = course_type;
+        entity.year = year;
      
         entity.id = course_id;
         entity.key = model_jae.get_key(course_id)
@@ -83,3 +85,4 @@ class model_jae(ndb.Model):
                 _properties.append(model_jae._properties[prop])
             
         return _properties
+    
