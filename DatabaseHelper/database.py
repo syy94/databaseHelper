@@ -4,6 +4,10 @@ def insertCourse(course_id, poly, score, name, url, ext_info, course_type, year)
     entity = model_jae.create_entity(course_id, poly, score, name, url, ext_info, course_type, year)
     return entity.put()
 
+def delCourse(course_id):
+    key = model_jae.get_key(course_id)
+    return key.delete()
+
 def get_course_by_id(course_id):
     # getting only 1 course
     return model_jae.get_key(course_id).get();
@@ -20,6 +24,30 @@ def get_course_list(size, nOffset, *ordering):
         qry = qry.order(order)
         
     return qry.fetch(size, offset=nOffset)
+
+class bulkDeleter:
+    # builder to simplify adding of entities
+    def __init__(self):
+        self.list_keys = []
+     
+    def add_key(self, course_id):
+        key = model_jae.get_key(course_id)
+        
+        self.list_keys.append(key)
+        
+        #returns self for method chaining
+        return self
+ 
+    def size(self):
+        return len(self.list_keys)
+     
+    def remove_from_database(self):
+        #returns a list keys from the entities
+        return ndb.delete_multi(self.list_keys)
+    
+    def refresh(self):
+        #clears the list such that builder can be 'reused'
+        del self.list_entity[:]
 
 class entityListBuilder:
     # builder to simplify adding of entities

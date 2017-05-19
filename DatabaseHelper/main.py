@@ -1,14 +1,10 @@
-
-
 import database
 import csv
-from database import entityListBuilder
 import urllib2
 
 from flask import Flask, render_template
 from google.appengine.ext import ndb
-from database import entityListBuilder, model_jae
-import logging
+from database import entityListBuilder, bulkDeleter
 
 app = Flask(__name__)
 
@@ -16,7 +12,14 @@ guestbook_key = ndb.Key('Guestbook', 'default_guestbook')
 @app.route('/')   # URL '/' to be handled by main() route handler
 
 def main():
+    database.delCourse('e')
     
+    deleter = bulkDeleter()
+    
+    for char in ['f', 'g', 'h']:
+        deleter.add_key(char)
+    
+    deleter.remove_from_database()
     
     #qry = model_jae.query()
     return render_template('index.html')
