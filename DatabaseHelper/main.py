@@ -1,23 +1,48 @@
-from flask import Flask, render_template
 import database
+import csv
+import urllib2
 
-from database import model_jae
+from flask import Flask, render_template
+from database import entityListBuilder, bulkDeleter
 
 app = Flask(__name__)
 
-from google.appengine.ext import ndb
-guestbook_key = ndb.Key('Guestbook', 'default_guestbook')
-
 @app.route('/')   # URL '/' to be handled by main() route handler
+
 def main():
-    for i in range(10):
-        database.insertCourse('c123'+str(i), 'NMA', 'A', 'difasd', 'dip in curry', '', 'asdasdasdasd')
-        database.insertCourse('c123'+str(i+1), 'NMA', 'B', 'difasd', 'dip in ketchup', '', 'asdasdasdasd')
+    database.delCourse('e')
     
+    deleter = bulkDeleter()
+    
+    for char in ['f', 'g', 'h']:
+        deleter.add_key(char)
+    
+    deleter.remove_from_database()
     
     #qry = model_jae.query()
-
     return render_template('index.html')
+ 
+@app.route('/serviceList')
+def serviceList():
+    url = 'http://www.polytechnic.edu.sg/api/download/course?id=b434281c-efe6-69f6-9162-ff000003a8ed'
+    response = urllib2.urlopen(url)
+    cr = csv.reader(response)
+
+    builder = entityListBuilder()
+    for row in cr:
+        builder.add_entity(row[2] # Course ID
+                           , row[1] # Poly Acronym
+                           , row[5] # O'lv Score
+                           , row[3] # Course Name
+                           , row[7] # URL
+                           , 'N/A' # Additional Info
+                           , row[4] # Course Type
+                           , row[6] # Year
+                           )
+    builder.add_to_database()
+    
+    return 'refreshed database'
+    
  
 @app.errorhandler(500)
 def server_error(e):

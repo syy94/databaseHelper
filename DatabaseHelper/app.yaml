@@ -11,5 +11,8 @@ handlers:
   script: cron/updateData.py
   login: admin
 
+- url: /_ah/api.*
+  script: webservice.app
+
 - url: /.*
   script: main.app

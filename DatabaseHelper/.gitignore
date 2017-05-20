@@ -1,6 +1,7 @@
 /appengine_config.pyc
 /helloworld.pyc
+/.pydevproject
 /database.pyc
 /main.pyc
 /index.yaml
-/.pydevproject
+/webservice.pyc
