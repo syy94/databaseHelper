@@ -3,12 +3,10 @@ import csv
 import urllib2
 
 from flask import Flask, render_template
-from google.appengine.ext import ndb
 from database import entityListBuilder, bulkDeleter
 
 app = Flask(__name__)
 
-guestbook_key = ndb.Key('Guestbook', 'default_guestbook')
 @app.route('/')   # URL '/' to be handled by main() route handler
 
 def main():
@@ -47,7 +45,6 @@ def serviceList():
     
  
 @app.errorhandler(500)
-
 def server_error(e):
     return str(e)
  

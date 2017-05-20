@@ -12,7 +12,8 @@ def get_course_by_id(course_id):
     # getting only 1 course
     return model_jae.get_key(course_id).get();
 
-def get_course_list(size, nOffset, *ordering):
+def get_course_list(size=10, nOffset=0, *ordering):
+    '''returns a list object'''
     #ordering is only able to take in multiple or no ndb.model.properties
     qry = model_jae.query()
     
