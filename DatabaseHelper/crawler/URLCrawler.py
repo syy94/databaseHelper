@@ -11,8 +11,7 @@ class QuotesSpider(scrapy.Spider):
 
     def start_requests(self):
         urls = [
-            'http://www.sp.edu.sg/wps/portal/vp-spws/spws.fsu.cse',
-            'http://quotes.toscrape.com/page/2/',
+            'http://www.tp.edu.sg/schools/hss/gerontological-management-studies'
         ]
         for url in urls:
             yield scrapy.Request(url=url, callback=self.parse)
