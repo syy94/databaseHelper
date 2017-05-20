@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<title>API Services</title>
+</head>
+<body>
+	<h1>APIS:</h1>
+	<div>
+	For Post, use something like 
+	<a href="https://chrome.google.com/webstore/detail/postman/fhbjgbiflinjbdggehcddcbncdddomop?hl=en">Postman</a>
+	 to test the service
+	</div>
+	
+	<br/>
+	
+	<div>
+	All services will and must return a success:boolean in the result JSON
+	</div>
+	<h2>POST</h2>
+	<ul>
+		<li>
+			<a href="list">list</a>
+			<ul>
+				<li>length:int
+				<li>offset:int
+				<li>order:? (improving coding not supported as of 20/05/17)
+				<li><b>Returns: courses:JSONArray</b>
+			</ul>
+		</li>
+		<li>
+			<a href="course">course</a>
+			<ul>
+				<li>course_id:str
+				<li><b>Returns: course:JSONObject (if not found, course:JSONObject will not exist)</b>
+			</ul>
+		</li>
+	</ul>
+</body>
+</html>
