@@ -5,6 +5,8 @@ Created on May 14, 2017
 '''
 import scrapy
 from scrapy.crawler import CrawlerProcess
+import csv
+import urllib2
 
 class QuotesSpider(scrapy.Spider):
     name = "quotes"
@@ -22,8 +24,15 @@ class QuotesSpider(scrapy.Spider):
         with open(filename, 'wb') as f:
             f.write(response.body)
         self.log('Saved file %s' % filename)
-        
 
+url = 'http://www.polytechnic.edu.sg/api/download/course?id=b434281c-efe6-69f6-9162-ff000003a8ed'
+response = urllib2.urlopen(url)
+cr = csv.reader(response)
+
+for row in cr:
+    print row
+    
+        
 process = CrawlerProcess()
 process.crawl(QuotesSpider)
 process.start() # the script will block here until the crawling is finished
