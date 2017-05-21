@@ -104,12 +104,13 @@ class model_jae(ndb.Model):
         return ndb.Key(model_jae, course_id)
     
     @staticmethod
-    def get_properties_from_str(*properties):       
+    def get_properties_from_str(*properties):
         _properties = []
 
+        # if first char is '-', means that it should be in descending order
         for prop in properties:
             if prop[0] is '-':
-                _properties.append(model_jae._properties[prop[1:]])
+                _properties.append(-model_jae._properties[prop[1:]])
             else:
                 _properties.append(model_jae._properties[prop])
             
