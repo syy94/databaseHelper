@@ -18,6 +18,7 @@ class iPolyCourse:
     score = 0           # O' Level Score        (E.g. 12)
     name  = ""          # Course name           (E.g. Diploma In ABC)
     url = ""            # Course URL            (Direct link to school site)
+    url2 = ""           # Secondary URL         (Second Course URL)
     year = 0            # Year timestamp        (Data is only relevant to specific year)
     intake = 0          # Course Intake         (E.g. 75, requires seperate URL + Data.gov Crawling)
     ext_info = ""       # Extra Info            (Course specific only)
@@ -48,6 +49,9 @@ class iPolyCourse:
         
     def setProspect(self, prospect):
         self.prospect = prospect
+        
+    def setURL2(self, url2):
+        self.url2 = url2
         
     def setEmployment(self, employment):
         self.employment = employment # Likely to be serialized into JSON data

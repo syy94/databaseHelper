@@ -86,6 +86,18 @@ class PolySpider(scrapy.Spider):
         courseList.append(courseObj)
         if (url.startswith("http://www.np.edu.sg")):
             courseNPList.append(courseObj)
+            url = url.lower()
+            # Create mobile version of URL
+            mobile_Ext = url[url.find("courses")+8:url.find("/pages")]
+            if (mobile_Ext.find("fulltime") != -1):
+                mobile_Ext = mobile_Ext[len("fulltime/"):]
+            if (mobile_Ext.find("diploma") != -1):
+                mobile_Ext = url[url.find("pages")+6:-5]
+            
+            mobile_Ext = "https://www1.np.edu.sg/EAE/CoursesAtAGlance/Courses/" + mobile_Ext + "/"
+            courseObj.url2 = mobile_Ext
+                
+            courseURL.append(mobile_Ext)
             #courseURL.append(url)
         elif (url.startswith("http://www.nyp.edu.sg")):
             courseNYPList.append(courseObj)
@@ -98,9 +110,8 @@ class PolySpider(scrapy.Spider):
             #courseURL.append(url)
         elif (url.startswith("http://www.sp.edu.sg")):
             try:
-                courseURL.append(spCourseURL[row[2]])
-                pprint.pprint(spCourseURL[row[2]])    
-                courseObj.url = spCourseURL[row[2]]
+                #courseURL.append(spCourseURL[row[2]])
+                courseObj.setURL2(spCourseURL[row[2]])
                 courseSPList.append(courseObj)
             except KeyError:
                 print "Course ID: " + row[2] + " not found!"
@@ -187,12 +198,16 @@ class PolySpider(scrapy.Spider):
     def processCourseInfo(self, response):
         
         # Ngee Ann Poly Course
-        if (response.url.lower().startswith("http://www.np.edu.sg/")): 
+        if (response.url.lower().startswith("https://www1.np.edu.sg/")): 
             for courseObj in self.courseNPList:
-                if (courseObj.url == response.url):
+                if (courseObj.url2 == response.url):
+                    courseObj.setDesciption(self.processStringList(response.xpath(".//article[@class='a2_art_1']//p//text()").extract()))
+                    print self.processStringList(response.xpath(".//article[@class='a2_art_1']//p//text()").extract())
+                    '''
                     if (response.url.lower().startswith("http://www.np.edu.sg/de")): # School of Design
                         courseObj.setDesciption(self.processStringList(response.xpath(".//div[@id='menutab_1_1']//tbody//tr[3]//text()").extract()))
-                    #elif (response.url.lower().startswith("http://www.np.edu.sg/lsct")): # School of Design
+                    elif (response.url.lower().startswith("http://www.np.edu.sg/lsct")): # School of Design
+                    '''
         
         # Republic Poly Course
         if (response.url.lower().startswith("http://www.rp.edu.sg/")): 
@@ -205,9 +220,7 @@ class PolySpider(scrapy.Spider):
             for courseObj in self.courseSPList:
                 if (courseObj.url == response.url):
                     courseObj.setDesciption(self.processStringList(response.xpath(".//div[@id='collapseOne']//p[1]//text()").extract()))
-                    pprint.pprint(courseObj.description)
                    
-        
         # Nanyang Poly Course
         if (response.url.lower().startswith("http://www.nyp.edu.sg/")): 
             for courseObj in self.courseNYPList:
