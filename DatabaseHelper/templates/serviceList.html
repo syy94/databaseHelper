@@ -10,28 +10,45 @@
 	For Post, use something like 
 	<a href="https://chrome.google.com/webstore/detail/postman/fhbjgbiflinjbdggehcddcbncdddomop?hl=en">Postman</a>
 	 to test the service
+	</br>
+	Check 
+	<a href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html">
+		http status
+	</a>
+	for success of the service call:
+	
 	</div>
 	
 	<br/>
 	
-	<div>
-	All services will and must return a success:boolean in the result JSON
-	</div>
 	<h2>POST</h2>
 	<ul>
 		<li>
 			<a href="list">list</a>
 			<ul>
-				<li>length:int
-				<li>offset:int
-				<li>order:? (improving coding not supported as of 20/05/17)
-				<li><b>Returns: courses:JSONArray</b>
+				<li>
+					<p>
+					JsonObject containing:
+						<ul>
+							<li>length: int
+							<li>offset: int
+							<li>order: ["id", "name", "poly", "score", "course_type"]
+							</br>(optional)
+						</ul>
+					</p>
+				<li><b>Returns: JSONArray</b>
 			</ul>
 		</li>
 		<li>
 			<a href="course">course</a>
 			<ul>
-				<li>course_id:str
+				<li>
+					<p>
+					JsonObject containing:
+						<ul>
+							<li>id: string
+						</ul>
+					</p>
 				<li><b>Returns: course:JSONObject (if not found, course:JSONObject will not exist)</b>
 			</ul>
 		</li>

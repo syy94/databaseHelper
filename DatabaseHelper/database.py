@@ -12,19 +12,45 @@ def get_course_by_id(course_id):
     # getting only 1 course
     return model_jae.get_key(course_id).get();
 
-def get_course_list(size=10, nOffset=0, *ordering):
-    '''returns a list object'''
-    #ordering is only able to take in multiple or no ndb.model.properties
+def get_course_list(jsonInput):
+    '''
+    takes in Jsonobject containing:
+    
+    size: int (optional, default value 20)
+    offset: int (optional, default value 0)
+    orders: [str] (optional)
+    
+    returns a list object
+    '''
+    # ordering is only able to take in multiple or no ndb.model.properties
     qry = model_jae.query()
     
+#     projection = [model_jae.name, model_jae.poly, model_jae.score, model_jae.id]
+    
+    ordering = model_jae.get_properties_from_str(jsonInput['orders'])
     # added to support model_jae.get_properties_from_str()
     if(len(ordering) is not 0 and type(ordering[0]) is list):
         ordering = ordering[0]
-    
+     
     for order in ordering:
         qry = qry.order(order)
         
-    return qry.fetch(size, offset=nOffset)
+    keys = qry.fetch(jsonInput['size'], offset=jsonInput['offset'], keys_only=True)
+    
+    # added the extra processing to return name, poly and score and id to minimize size of 
+    # data sent through the web.
+    
+    result = []
+    
+    for course in ndb.get_multi(keys):
+        result.append({
+            "name": course.name,
+            "poly": course.poly,
+            "score": course.score,
+            "id": course.id
+        })
+    
+    return result;
 
 class bulkDeleter:
     # builder to simplify adding of entities
@@ -36,18 +62,18 @@ class bulkDeleter:
         
         self.list_keys.append(key)
         
-        #returns self for method chaining
+        # returns self for method chaining
         return self
  
     def size(self):
         return len(self.list_keys)
      
     def remove_from_database(self):
-        #returns a list keys from the entities
+        # returns a list keys from the entities
         return ndb.delete_multi(self.list_keys)
     
     def refresh(self):
-        #clears the list such that builder can be 'reused'
+        # clears the list such that builder can be 'reused'
         del self.list_entity[:]
 
 class entityListBuilder:
@@ -60,29 +86,29 @@ class entityListBuilder:
         
         self.list_entity.append(entity)
         
-        #returns self for method chaining
+        # returns self for method chaining
         return self
  
     def size(self):
         return len(self.list_entity)
      
     def add_to_database(self):
-        #returns a list keys from the entities
+        # returns a list keys from the entities
         return ndb.put_multi(self.list_entity)
     
     def refresh(self):
-        #clears the list such that builder can be 'reused'
+        # clears the list such that builder can be 'reused'
         del self.list_entity[:]
         
 class model_jae(ndb.Model):    
-    poly = ndb.StringProperty() # Polytechnic Acronym
-    id = ndb.StringProperty() # Course ID
-    score = ndb.StringProperty() # O' level Score Requirement
-    name = ndb.StringProperty() # Course Name
-    url = ndb.TextProperty() # Course URL Info
-    ext_info = ndb.StringProperty() # Additional info
+    poly = ndb.StringProperty()  # Polytechnic Acronym
+    id = ndb.StringProperty()  # Course ID
+    score = ndb.StringProperty()  # O' level Score Requirement
+    name = ndb.StringProperty()  # Course Name
+    url = ndb.TextProperty()  # Course URL Info
+    ext_info = ndb.StringProperty()  # Additional info
     course_type = ndb.StringProperty()  # course_type = applied sciences, etc
-    year = ndb.StringProperty() # The year this entry is collected
+    year = ndb.StringProperty()  # The year this entry is collected
     
     '''method to easily create an entity'''
     @staticmethod
@@ -104,7 +130,7 @@ class model_jae(ndb.Model):
         return ndb.Key(model_jae, course_id)
     
     @staticmethod
-    def get_properties_from_str(*properties):       
+    def get_properties_from_str(properties):       
         _properties = []
 
         for prop in properties:
