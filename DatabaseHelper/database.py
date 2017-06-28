@@ -1,4 +1,6 @@
+from google.appengine.api import search
 from google.appengine.ext import ndb
+
 
 def insertCourse(course_id, poly, score, name, url, ext_info, course_type, year):
     entity = model_jae.create_entity(course_id, poly, score, name, url, ext_info, course_type, year)
@@ -52,6 +54,23 @@ def get_course_list(jsonInput):
     
     return result;
 
+def find(query):
+    
+    q_result = model_jae.get_search_Index().search(''.join(['terms:', query]))
+
+    result = [];
+    
+    for doc in q_result.results:
+        course = {"id": doc.doc_id}
+        
+        for field in doc.fields:
+            if(str(field.name) != "terms"):            
+                course[field.name] = field.value
+        
+        result.append(course)
+        
+    return result;
+
 class bulkDeleter:
     # builder to simplify adding of entities
     def __init__(self):
@@ -103,12 +122,62 @@ class entityListBuilder:
 class model_jae(ndb.Model):    
     poly = ndb.StringProperty()  # Polytechnic Acronym
     id = ndb.StringProperty()  # Course ID
-    score = ndb.StringProperty()  # O' level Score Requirement
+    score = ndb.IntegerProperty()  # O' level Score Requirement
     name = ndb.StringProperty()  # Course Name
     url = ndb.TextProperty()  # Course URL Info
     ext_info = ndb.StringProperty()  # Additional info
     course_type = ndb.StringProperty()  # course_type = applied sciences, etc
     year = ndb.StringProperty()  # The year this entry is collected
+    
+    @staticmethod
+    def get_search_Index():
+        return search.Index('search')
+    
+    def _post_put_hook(self, future):
+        # super
+        ndb.Model._post_put_hook(self, future)
+        # Post hooks do not check whether the RPC was successful; the hook runs regardless of failure.
+        doc = search.Document(
+            doc_id=self.id,
+            fields=[
+                search.TextField(name='terms', value=self.get_search_terms()),
+                search.TextField(name='id', value=self.id),
+                search.TextField(name='name', value=self.name),
+                search.NumberField(name='score', value=self.score),
+                search.TextField(name='poly', value=self.poly)
+            ]);
+            
+        search.Index('search').put(doc)
+    
+    def get_search_terms(self):
+        terms = []
+        terms.append(self.id)
+        terms.append(self.poly)
+        terms.append(str(self.score))
+        
+        for word in str(self.name).split():
+            cursor = 3
+            while True:
+                if(len(word) < 3): break;
+                # this method produces pieces of 'TEXT' as 'TEX,TEXT'
+                terms.append(word[:cursor])
+            
+                # optionally, you can do the following instead to procude
+                # 'TEXT' as 'T,E,X,T,TE,EX,XT,TEX,EXT,TEXT'
+                #
+                # for i in range(len(word) - cursor + 1):
+                #    pieces.append(word[i:i + cursor])
+            
+                if cursor == len(word): break
+                cursor += 1
+        
+        return ','.join(terms);
+    
+    @classmethod
+    def _post_delete_hook(cls, key, future):
+        super(model_jae, cls)._post_delete_hook(key, future)
+        
+        search.Index('search').delete(key.id())
     
     '''method to easily create an entity'''
     @staticmethod
@@ -134,8 +203,8 @@ class model_jae(ndb.Model):
         _properties = []
 
         for prop in properties:
-            if prop[0] is '-':
-                _properties.append(model_jae._properties[prop[1:]])
+            if str(prop)[0] is '-':
+                _properties.append(-model_jae._properties[str(prop)[1:]])
             else:
                 _properties.append(model_jae._properties[prop])
             

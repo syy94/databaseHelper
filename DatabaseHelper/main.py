@@ -10,16 +10,6 @@ app = Flask(__name__)
 @app.route('/')   # URL '/' to be handled by main() route handler
 
 def main():
-    database.delCourse('e')
-    
-    deleter = bulkDeleter()
-    
-    for char in ['f', 'g', 'h']:
-        deleter.add_key(char)
-    
-    deleter.remove_from_database()
-    
-    #qry = model_jae.query()
     return render_template('index.html')
  
 @app.route('/serviceList')

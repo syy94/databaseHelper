@@ -12,6 +12,13 @@ ERROR = 'error'
 def main():
     return render_template('serviceList.html')
 
+@app.route(BASE_URL + 'search', methods=['POST'])
+def search_courses():
+    requestJson = request.get_json(force=True)
+    
+    return json.dumps(database.find(requestJson['query']))
+    
+
 @app.route(BASE_URL + 'list', methods=['POST'])
 def list_courses():
     requestJson = request.get_json(force=True)

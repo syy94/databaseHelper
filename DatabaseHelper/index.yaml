@@ -38,6 +38,19 @@ indexes:
 
 - kind: model_jae
   properties:
+  - name: name
+  - name: score
+    direction: desc
+
+- kind: model_jae
+  properties:
+  - name: name
+    direction: desc
+  - name: score
+    direction: desc
+
+- kind: model_jae
+  properties:
   - name: poly
   - name: id
   - name: name
@@ -58,9 +71,26 @@ indexes:
 - kind: model_jae
   properties:
   - name: poly
+  - name: name
+    direction: desc
+
+- kind: model_jae
+  properties:
+  - name: poly
+  - name: score
+
+- kind: model_jae
+  properties:
+  - name: poly
   - name: score
   - name: id
   - name: name
+
+- kind: model_jae
+  properties:
+  - name: poly
+  - name: score
+    direction: desc
 
 - kind: model_jae
   properties:
