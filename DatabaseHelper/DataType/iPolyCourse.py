@@ -21,6 +21,7 @@ class iPolyCourse:
     url2 = ""           # Secondary URL         (Second Course URL)
     year = 0            # Year timestamp        (Data is only relevant to specific year)
     intake = 0          # Course Intake         (E.g. 75, requires seperate URL + Data.gov Crawling)
+    structure = ""      # Course Structure      (Structure stored in JSON format
     ext_info = ""       # Extra Info            (Course specific only)
     description = ""    # Course Description    (Paragraph on course description - URL Crawling)
     prospect = ""       # Career Prospect       (Paragraph on Career Prospect - URL Crawling)
@@ -52,6 +53,9 @@ class iPolyCourse:
         
     def setURL2(self, url2):
         self.url2 = url2
+        
+    def setStructure(self, structure):
+        self.structure = structure
         
     def setEmployment(self, employment):
         self.employment = employment # Likely to be serialized into JSON data

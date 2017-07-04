@@ -10,6 +10,7 @@ import pprint
 import openpyxl 
 import StringIO
 import re
+import json
 
 from itertools import islice
 from DataType.iPolyCourse import iPolyCourse
@@ -84,9 +85,8 @@ class PolySpider(scrapy.Spider):
             url = url[:-1]
         courseObj = iPolyCourse(row[2], row[1], row[5], row[3], url, row[6])
         courseList.append(courseObj)
-        if (url.startswith("http://www.np.edu.sg")):
-            courseNPList.append(courseObj)
-            url = url.lower()
+        
+        if (url.startswith("http://www.np.edu.sg/soe/courses/ebm/")):
             # Create mobile version of URL
             mobile_Ext = url[url.find("courses")+8:url.find("/pages")]
             if (mobile_Ext.find("fulltime") != -1):
@@ -97,7 +97,8 @@ class PolySpider(scrapy.Spider):
             mobile_Ext = "https://www1.np.edu.sg/EAE/CoursesAtAGlance/Courses/" + mobile_Ext + "/"
             courseObj.url2 = mobile_Ext
                 
-            courseURL.append(mobile_Ext)
+            courseNPList.append(courseObj)
+            #courseURL.append(mobile_Ext)
             #courseURL.append(url)
         elif (url.startswith("http://www.nyp.edu.sg")):
             courseNYPList.append(courseObj)
@@ -105,9 +106,9 @@ class PolySpider(scrapy.Spider):
         elif (url.startswith("http://www.tp.edu.sg")):
             courseTPList.append(courseObj)
             #courseURL.append(url)
-        elif (url.startswith("http://www.rp.edu.sg")):
+        elif (url.startswith("http://www.rp.edu.sg/")):
             courseRPList.append(courseObj)   
-            #courseURL.append(url)
+            courseURL.append(url)
         elif (url.startswith("http://www.sp.edu.sg")):
             try:
                 #courseURL.append(spCourseURL[row[2]])
@@ -202,37 +203,208 @@ class PolySpider(scrapy.Spider):
             for courseObj in self.courseNPList:
                 if (courseObj.url2 == response.url):
                     courseObj.setDesciption(self.processStringList(response.xpath(".//article[@class='a2_art_1']//p//text()").extract()))
-                    print self.processStringList(response.xpath(".//article[@class='a2_art_1']//p//text()").extract())
-                    '''
-                    if (response.url.lower().startswith("http://www.np.edu.sg/de")): # School of Design
-                        courseObj.setDesciption(self.processStringList(response.xpath(".//div[@id='menutab_1_1']//tbody//tr[3]//text()").extract()))
-                    elif (response.url.lower().startswith("http://www.np.edu.sg/lsct")): # School of Design
-                    '''
+        if (response.url.lower().startswith("http://www.np.edu.sg/")): 
+            for courseObj in self.courseNPList:
+                if (courseObj.url == response.url):
+                    structDict = {'1:Year 1': {}, '2:Year 2': {}, '3:Year 3': {}}
+                    currentYear = '1:Year 1'
+                    currentSem = 'Semester 1'
+                    for mod in response.xpath("//div[@id='menutab_1_5']//table[1]//tr"):
+                        if (len(mod.xpath(".//td[3]//text()").extract()) > 0 and len(self.processString(mod.xpath(".//td[3]//text()").extract()[0].strip())) > 0):
+                            modYear = self.processString(mod.xpath(".//td[3]//text()").extract()[0].strip())
+                            if (modYear.startswith("Level 1.1")):
+                                currentYear = '1:Year 1'
+                                currentSem = 'Semester 1'
+                            elif (modYear.startswith("Level 1.2")):
+                                currentYear = '1:Year 1'
+                                currentSem = 'Semester 2'
+                            elif (modYear.startswith("Level 2.1")):
+                                currentYear = '2:Year 2'
+                                currentSem = 'Semester 1'
+                            elif (modYear.startswith("Level 2.2")):
+                                currentYear = '2:Year 2'
+                                currentSem = 'Semester 2'
+                            elif (modYear.startswith("Level 3.1")):
+                                currentYear = '3:Year 3'
+                                currentSem = 'Semester 1'
+                            elif (modYear.startswith("Level 3.2")):
+                                currentYear = '3:Year 3'
+                                currentSem = 'Semester 2'
+                            structDict[currentYear][currentSem] = []
+                        elif (len(mod.xpath(".//td[3]//span[@class='grdModuletext']//text()").extract()) > 0):
+                            structDict[currentYear][currentSem].append(self.processString(mod.xpath(".//td[3]//span[@class='grdModuletext']//text()").extract()[0]).strip())
+                    courseObj.setStructure(json.dumps(structDict))
+                    pprint.pprint(structDict)
         
         # Republic Poly Course
         if (response.url.lower().startswith("http://www.rp.edu.sg/")): 
             for courseObj in self.courseRPList:
                 if (courseObj.url == response.url):
-                        courseObj.setDesciption(self.processStringList(response.xpath(".//div[@class='coursetab']//table//table//tr[3]//text()").extract()))
+                    courseObj.setDesciption(self.processStringList(response.xpath(".//div[@class='coursetab']//table//table//tr[3]//text()").extract()))
+                    structDict = {'1:General': {}, '2:Discipline': [], '3:Specialisation': {}}
+                    structDict['1:General']['Modules'] = []
+                    structDict['1:General']['Programs'] = []
+                    i = 1 # Table Index
+                    while True:
+                        tableHeader = response.xpath("//ul[@id='desc']//li[3]//textarea//table[" + str(i) + "]//tr[1]//font/text()").extract()
+                        if (not len(tableHeader) > 0):
+                            break
+                        else:
+                            if (tableHeader[0].startswith("General")):
+                                for mod in response.xpath("//ul[@id='desc']//li[3]//textarea//table[" + str(i) + "]//tr[2]//a//text()"):
+                                    if (len(self.processString(mod.extract()).strip()) > 1):
+                                        structDict['1:General']['Modules'].append(self.processString(mod.extract()).strip())
+                            elif (tableHeader[0].startswith("Freely")):
+                                structDict['1:General']['Modules'].append(self.processString(tableHeader[0]).strip())
+                            elif (tableHeader[0].startswith("Discipline")):
+                                for mod in response.xpath("//ul[@id='desc']//li[3]//textarea//table[" + str(i) + "]//tr[2]//a//text()"):
+                                    if (len(self.processString(mod.extract()).strip()) > 1):
+                                        structDict['2:Discipline'].append(self.processString(mod.extract()).strip())
+                            elif (tableHeader[0].startswith("Industry")):
+                                for mod in response.xpath("//ul[@id='desc']//li[3]//textarea//table[" + str(i) + "]//tr[2]//a//text()"):
+                                    if (len(self.processString(mod.extract()).strip()) > 1):
+                                        structDict['1:General']['Programs'].append(self.processString(mod.extract()).strip())
+                            elif (tableHeader[0].startswith("Specialisation")):
+                                multi_elective = response.xpath("//ul[@id='desc']//li[3]//textarea//table[" + str(i) + "]//tr[2]//p//text()").extract()
+                                # Has multiple elective
+                                if (len(multi_elective) > 0 and multi_elective[0].startswith("Choose")): 
+                                    # Electives formatted by multiple TR (Horizontally)
+                                    if (len(response.xpath("//ul[@id='desc']//li[3]//textarea//table[" + str(i) + "]//tr[3]//p//text()").extract()) > 0):
+                                        electiveIndex = 1
+                                        while True: # Loop thru all elective options
+                                            electiveHeader = response.xpath("//ul[@id='desc']//li[3]//textarea//table[" + str(i) + "]//tr[3]//td[" + str(electiveIndex) + "]//strong//text()").extract()
+                                            if (len(electiveHeader) > 0):
+                                                structDict['3:Specialisation'][str(electiveHeader[0].strip())] = []
+                                                for mod in response.xpath("//ul[@id='desc']//li[3]//textarea//table[" + str(i) + "]//tr[3]//td[" + str(electiveIndex) + "]//a//text()"):
+                                                    if (len(self.processString(mod.extract()).strip()) > 1):
+                                                        structDict['3:Specialisation'][electiveHeader[0].strip()].append(self.processString(mod.extract()).strip())
+                                                electiveIndex +=1
+                                            else:
+                                                break
+                                    # Electives formatted by single TD (Vertically)
+                                    elif (str(response.xpath("//ul[@id='desc']//li[3]//textarea//table[" + str(i) + "]//tr[2]//strong//text()").extract()[0]).startswith("Option")) :
+                                        track = ""
+                                        for mod in response.xpath("//ul[@id='desc']//li[3]//textarea//table[" + str(i) + "]//tr[2]//text()"):
+                                            text =  self.processString(mod.extract().strip())
+                                            if (len(text) > 0 and not text.startswith("Choose")):
+                                                if (text.startswith("Option")):
+                                                    track = text[text.index(':')+2:]
+                                                    structDict['3:Specialisation'][track] = []
+                                                else:
+                                                    structDict['3:Specialisation'][track].append(text)
+                                                
+                                # Doesnt have multiple electives
+                                else:
+                                    structDict['3:Specialisation']['Single Track'] = []
+                                    for mod in response.xpath("//ul[@id='desc']//li[3]//textarea//table[" + str(i) + "]//tr[2]//a//text()"):
+                                        if (len(self.processString(mod.extract()).strip()) > 1):
+                                            structDict['3:Specialisation']['Single Track'].append(self.processString(mod.extract()).strip())
+                            elif (tableHeader[0].startswith("Elective")):
+                                structDict['3:Specialisation']['Elective (Select One)'] = []
+                                for mod in response.xpath("//ul[@id='desc']//li[3]//textarea//table[" + str(i) + "]//tr[2]//a//text()"):
+                                    if (len(self.processString(mod.extract()).strip()) > 1):
+                                        structDict['3:Specialisation']['Elective (Select One)'].append(self.processString(mod.extract()).strip())
+                                        
+                            i +=1
+                    courseObj.setStructure(json.dumps(structDict))
+                    pprint.pprint(structDict)
                         
         # Singapore Poly Course
-        if (response.url.lower().startswith("http://m.sp.edu.sg/")): 
+        if (response.url.lower().startswith("http://m.sp.edu.sg/dare-s88")): 
             for courseObj in self.courseSPList:
-                if (courseObj.url == response.url):
+                if (courseObj.url2 == response.url):
                     courseObj.setDesciption(self.processStringList(response.xpath(".//div[@id='collapseOne']//p[1]//text()").extract()))
+                    structDict = {'1:Year 1': [], '2:Year 2': [], '3:Year 3': [], '4:Advanced Modules (optional)' :[]}
+                    for mod in response.xpath("//div[@id='collapseFive']//ul[1]//li//text()"):
+                            structDict['1:Year 1'].append(mod.extract())
+                    for mod in response.xpath("//div[@id='collapseFive']//ul[2]//li//text()"):
+                            structDict['2:Year 2'].append(mod.extract())
+                    for mod in response.xpath("//div[@id='collapseFive']//ul[3]//li//text()"):
+                            structDict['3:Year 3'].append(mod.extract())
+                    for mod in response.xpath("//div[@id='collapseFive']//ul[4]//li//text()"):
+                            structDict['4:Advanced Modules (optional)'].append(mod.extract())
+                    courseObj.setStructure(json.dumps(structDict))
                    
         # Nanyang Poly Course
-        if (response.url.lower().startswith("http://www.nyp.edu.sg/")): 
+        if (response.url.lower().startswith("http://www.nyp.edu.sg")): 
             for courseObj in self.courseNYPList:
                 if (courseObj.url == response.url):
+                        # Extract course description
                         courseObj.setDesciption(self.processStringList(response.xpath(".//section[@class='school-course-about ds-component-margin']//div[@class='ds-richtext']//p//text()").extract()))
+                        # Extract course structure
+                        structDict = {'1:Year 1 Semester 1': [], '2:Year 1 Semester 2': [], '3:Year 2 Semester 1': [], '4:Year 2 Semester 2': [], '5:Year 3 Core': [], '6:Year 3 Elective (Choose One)': []}
+                        for mod in response.xpath("//div[@class='accordion parbase section']//ul[1]//li//text()"):
+                            structDict['1:Year 1 Semester 1'].append(mod.extract())
+                        for mod in response.xpath("//div[@class='accordion parbase section']//ul[2]//li//text()"):
+                            structDict['2:Year 1 Semester 2'].append(mod.extract())
+                        # Further course details extraction not available, as accordion is loaded dynamically through AJAX
+                        '''
+                        for mod in response.xpath("//div[@class='accordion parbase section']//ul[3]//li//text()"):
+                            structDict['Year 2 Semester 1'].append(mod.extract())
+                        for mod in response.xpath("//div[@class='accordion parbase section']//ul[4]//li//text()"):
+                            structDict['Year 2 Semester 2'].append(mod.extract())
+                        for mod in response.xpath("//div[@class='accordion parbase section']//ul[5]//li//text()"):
+                            structDict['Year 3 Core'].append(mod.extract())
+                        for mod in response.xpath("//div[@class='accordion parbase section']//ul[6]//li//text()"):
+                            structDict['Year 3 Elective (Choose One)'].append(mod.extract())
+                        '''
+                        courseObj.setStructure(json.dumps(structDict))
         
         # Temasek Poly Course
         if (response.url.lower().startswith("http://www.tp.edu.sg/")): 
             for courseObj in self.courseTPList:
                 if (courseObj.url == response.url):
                         courseObj.setDesciption(self.processStringList(response.xpath(".//div[@class='tab-content']//div[@id='tab1']//p/text()").extract()))
-            
+                        structDict = {'1:Year 1': [], '2:Year 2': [], '3:Year 3': [], '4:Electives':{}}
+                        for mod in response.xpath("//div[@id='tab6']//table[1]//tbody[1]//tr"): # Extract from Core Subjects
+                            mod_name =  mod.xpath(".//td//a//text()").extract()
+                            mod_lv =  mod.xpath(".//td[3]//text()").extract()[0]
+                            if (len(mod_name) > 0):
+                                if (mod_lv == '1'):
+                                    structDict['1:Year 1'].append(self.processString(mod_name[0]).strip())
+                                elif (mod_lv == '2'):
+                                    structDict['2:Year 2'].append(self.processString(mod_name[0]).strip())
+                                elif (mod_lv == '3'):
+                                    structDict['3:Year 3'].append(self.processString(mod_name[0]).strip())
+                        for mod in response.xpath("//div[@id='tab6']//table[2]//tbody[1]//tr"): # Extract from Diploma Subjects
+                            mod_name =  mod.xpath(".//td//a//text()").extract()
+                            mod_lv =  mod.xpath(".//td[3]//text()").extract()[0]
+                            if (len(mod_name) > 0):
+                                if (mod_lv == '1'):
+                                    structDict['1:Year 1'].append(self.processString(mod_name[0]).strip())
+                                elif (mod_lv == '2'):
+                                    structDict['2:Year 2'].append(self.processString(mod_name[0]).strip())
+                                elif (mod_lv == '3'):
+                                    structDict['3:Year 3'].append(self.processString(mod_name[0]).strip())
+                        
+                        # Elective modules handling
+                        electiveHeader = self.processString(response.xpath("//div[@id='tab6']/h3[3]//text()").extract()[0])
+                        if (electiveHeader.endswith("Elective Subjects") or response.url.lower().endswith("veterinary-technology-t45")): # Elective Subjects by list or entire table
+                            # Make exception for veterinary tech, that website fcke dup not consistent one
+                            listExist = response.xpath("//div[@id='tab6']/ul/li//text()").extract()
+                            if (len(listExist) > 1):
+                                i=3
+                                for elective in response.xpath("//div[@id='tab6']/ul/li//text()"): # Extract from Diploma Subjects
+                                    structDict['4:Electives'][self.processString(elective.extract()).strip()] = []
+                                    for mod in response.xpath("//div[@id='tab6']//table[" + str(i) + "]//tbody[1]//tr//td//a//text()"): # Extract from Diploma Subjects
+                                        structDict['4:Electives'][elective.extract()].append(self.processString(mod.extract()).strip())
+                                    i+=1
+                            else:
+                                structDict['4:Electives'] = []
+                                for elective in response.xpath("//div[@id='tab6']//table[3]//tbody[1]//tr"): # Extract mods from elective section
+                                    mod_name =  elective.xpath(".//td//a//text()").extract()     
+                                    if (len(mod_name) > 0):
+                                        structDict['4:Electives'].append(self.processString(mod_name[0]).strip())
+                                    
+                        elif (electiveHeader.endswith("Elective Cluster Subjects") ): # Elective in cluster forms
+                            i=3
+                            for elective in response.xpath("//div[@id='tab6']/p//text()"): # Extract from Diploma Subjects
+                                if (not elective.extract().startswith("Students") and not elective.extract().startswith("Cross") and len(elective.extract()) > 1):
+                                    structDict['4:Electives'][self.processString(elective.extract()).strip()] = []
+                                    for mod in response.xpath("//div[@id='tab6']//table[" + str(i) + "]//tbody[1]//tr//td//a//text()"): # Extract from Diploma Subjects
+                                        structDict['4:Electives'][elective.extract()].append(self.processString(mod.extract()).strip())
+                                i+=1
+                        
     #END of processCourseInfo()
     
     def processString(self, string):
