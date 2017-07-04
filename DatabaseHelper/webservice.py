@@ -2,6 +2,8 @@ from flask import Flask
 from flask import render_template, request
 import json
 import database
+from flask.wrappers import Response
+
 app = Flask(__name__)
 
 BASE_URL = '/_ah/api/'
@@ -12,11 +14,23 @@ ERROR = 'error'
 def main():
     return render_template('serviceList.html')
 
+@app.route(BASE_URL + 'favs', methods=['POST'])
+def get_favs():
+    requestJson = request.get_json(force=True)
+    
+    result = database.get_favs(requestJson)
+    
+    result = json.dumps(result)
+    
+    return Response(result, mimetype='application/json')
+
 @app.route(BASE_URL + 'search', methods=['POST'])
 def search_courses():
     requestJson = request.get_json(force=True)
     
-    return json.dumps(database.find(requestJson['query']))
+    result = json.dumps(database.find(requestJson['query'], requestJson['offset']))
+    
+    return Response(result, mimetype='application/json')
     
 
 @app.route(BASE_URL + 'list', methods=['POST'])

@@ -1,7 +1,6 @@
 from google.appengine.api import search
 from google.appengine.ext import ndb
 
-
 def insertCourse(course_id, poly, score, name, url, ext_info, course_type, year):
     entity = model_jae.create_entity(course_id, poly, score, name, url, ext_info, course_type, year)
     return entity.put()
@@ -13,6 +12,16 @@ def delCourse(course_id):
 def get_course_by_id(course_id):
     # getting only 1 course
     return model_jae.get_key(course_id).get();
+
+def get_favs(id_list):
+    key_list = [(model_jae.get_key(myId)) for myId in id_list]
+    
+    return [{
+            "name": course.name,
+            "poly": course.poly,
+            "score": course.score,
+            "id": course.id
+        } for course in ndb.get_multi(key_list)]
 
 def get_course_list(jsonInput):
     '''
@@ -27,7 +36,7 @@ def get_course_list(jsonInput):
     # ordering is only able to take in multiple or no ndb.model.properties
     qry = model_jae.query()
     
-#     projection = [model_jae.name, model_jae.poly, model_jae.score, model_jae.id]
+    # projection = [model_jae.name, model_jae.poly, model_jae.score, model_jae.id]
     
     ordering = model_jae.get_properties_from_str(jsonInput['orders'])
     # added to support model_jae.get_properties_from_str()
@@ -54,18 +63,24 @@ def get_course_list(jsonInput):
     
     return result;
 
-def find(query):
+
+def find(queryStr, offset):
+    query_options = search.QueryOptions(
+        limit=40,
+        offset=offset,
+        returned_fields=['id', 'name', 'score', 'poly'])
     
-    q_result = model_jae.get_search_Index().search(''.join(['terms:', query]))
+    query = search.Query(query_string=''.join(['terms:', queryStr]), options=query_options)
+    
+    q_result = model_jae.get_search_Index().search(query)
 
     result = [];
     
     for doc in q_result.results:
-        course = {"id": doc.doc_id}
+        course = {};
         
         for field in doc.fields:
-            if(str(field.name) != "terms"):            
-                course[field.name] = field.value
+            course[field.name] = field.value
         
         result.append(course)
         
@@ -156,9 +171,8 @@ class model_jae(ndb.Model):
         terms.append(str(self.score))
         
         for word in str(self.name).split():
-            cursor = 3
+            cursor = 1
             while True:
-                if(len(word) < 3): break;
                 # this method produces pieces of 'TEXT' as 'TEX,TEXT'
                 terms.append(word[:cursor])
             
