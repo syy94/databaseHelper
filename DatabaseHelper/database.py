@@ -1,6 +1,7 @@
 from google.appengine.api import search
 from google.appengine.ext import ndb
 
+
 def insertCourse(course_id, poly, score, name, url, ext_info, course_type, year):
     entity = model_jae.create_entity(course_id, poly, score, name, url, ext_info, course_type, year)
     return entity.put()
@@ -33,9 +34,12 @@ def get_course_list(jsonInput):
     
     returns a list object
     '''
-    # ordering is only able to take in multiple or no ndb.model.properties
-    qry = model_jae.query()
     
+    # ordering is only able to take in multiple or no ndb.model.properties
+    try:
+        qry = model_jae.query(model_jae.poly == str(jsonInput["school"]))
+    except:
+        qry = model_jae.query()
     # projection = [model_jae.name, model_jae.poly, model_jae.score, model_jae.id]
     
     ordering = model_jae.get_properties_from_str(jsonInput['orders'])
@@ -62,7 +66,6 @@ def get_course_list(jsonInput):
         })
     
     return result;
-
 
 def find(queryStr, offset):
     query_options = search.QueryOptions(
