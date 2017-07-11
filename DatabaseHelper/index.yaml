@@ -53,6 +53,11 @@ indexes:
   properties:
   - name: poly
   - name: id
+
+- kind: model_jae
+  properties:
+  - name: poly
+  - name: id
   - name: name
   - name: score
 
