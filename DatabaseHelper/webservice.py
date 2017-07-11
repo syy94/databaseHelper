@@ -2,6 +2,8 @@ from flask import Flask
 from flask import render_template, request
 import json
 import database
+from flask.wrappers import Response
+
 app = Flask(__name__)
 
 BASE_URL = '/_ah/api/'
@@ -12,40 +14,51 @@ ERROR = 'error'
 def main():
     return render_template('serviceList.html')
 
-@app.route(BASE_URL+'list', methods=['POST'])
-def list_courses():
-    result = {}
+@app.route(BASE_URL + 'favs', methods=['POST'])
+def get_favs():
+    requestJson = request.get_json(force=True)
     
-    length = request.form.get('length', type=int, default=10)
-    offset = request.form.get('offset', type=int, default=0)
-    #order for now not supported
-    #order = request.form.get('order', type=str).split(':')
+    result = database.get_favs(requestJson)
     
-    course_list = [course.to_dict() for course in database.get_course_list(length, offset)]
+    result = json.dumps(result)
     
-    result['courses'] = course_list
-    result[SUCCESS] = True
-    
-    return json.dumps(result)
+    return Response(result, mimetype='application/json')
 
-@app.route(BASE_URL+'course', methods=['POST'])
+@app.route(BASE_URL + 'search', methods=['POST'])
+def search_courses():
+    requestJson = request.get_json(force=True)
+    
+    result = json.dumps(database.find(requestJson['query'], requestJson['offset']))
+    
+    return Response(result, mimetype='application/json')
+    
+
+@app.route(BASE_URL + 'list', methods=['POST'])
+def list_courses():
+    requestJson = request.get_json(force=True)
+    
+    course_list = database.get_course_list(requestJson)
+    
+    if len(course_list) is not 0:
+        return json.dumps(course_list)
+    else:
+        return "", 204
+
+@app.route(BASE_URL + 'course', methods=['POST'])
 def get_course():
-    result = {SUCCESS:True}
+    requestJson = request.get_json(force=True);
     
-    course_id = request.form.get('course_id')
-    
-    course = database.get_course_by_id(course_id)
+    course = database.get_course_by_id(requestJson['id'])
     
     if course is not None:
-        result['course'] = course.to_dict()
-
-    return json.dumps(result)
+        return json.dumps(course.to_dict())
+    else:
+        return "", 204
     
 
 @app.errorhandler(500)
 def server_error(e):
-    result = {SUCCESS:False, ERROR:str(e)}
-    return json.dumps(result)
+    return json.dumps(str(e))
 
 if __name__ == '__main__':
     app.run()

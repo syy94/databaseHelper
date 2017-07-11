@@ -11,6 +11,7 @@ import openpyxl
 import StringIO
 import re
 import json
+import pickle
 
 from itertools import islice
 from DataType.iPolyCourse import iPolyCourse
@@ -18,13 +19,12 @@ from twisted.internet import reactor, defer
 from scrapy.crawler import CrawlerRunner
 from scrapy.utils.log import configure_logging
 
-        
 '''
 Initial Crawler to extract SP's course data from mobile version
 '''
 class SP_MobileSpider(scrapy.Spider):
     name = "SP_MobileSpider"
-    
+    SPMobile_Dict = {}
     def start_requests(self):
         urls = ['http://m.sp.edu.sg/courses']
 
@@ -33,6 +33,7 @@ class SP_MobileSpider(scrapy.Spider):
     
     def parse(self, response):
         coursePattern = re.compile("^([A-Z]{1}[0-9]{2})$")  # Match Alphabet + 2 Digits
+        Results = response.xpath('//a[@class="courses-box-1"]/@href').extract()
         with open("./SPMobile.csv", "wb") as csv_file:
             Results = response.xpath('//a[@class="courses-box-1"]/@href').extract()
             for rows in Results:
@@ -42,13 +43,14 @@ class SP_MobileSpider(scrapy.Spider):
                     
 class PolySpider(scrapy.Spider):
     name = "PolyIntake"
+    
     intakeDict = {}
-    courseList = [] # Contains list of all courses, be populated at the end by merging the ones below
-    courseNPList = [] # List of NP course to be populated
-    courseSPList = [] # List of SP course to be populated
-    courseRPList = [] # List of RP course to be populated
-    courseNYPList = [] # List of NYP course to be populated
-    courseTPList = [] # List of TP course to be populated
+    courseList = []     # Contains list of all courses, be populated at the end by merging the ones below
+    courseNPList = []   # List of NP course to be populated
+    courseSPList = []   # List of SP course to be populated
+    courseRPList = []   # List of RP course to be populated
+    courseNYPList = []  # List of NYP course to be populated
+    courseTPList = []   # List of TP course to be populated
     spCourseURL = {}
     courseURL = []
     intakeURL = []
@@ -83,7 +85,7 @@ class PolySpider(scrapy.Spider):
             url = url[1:]
         if (url[-1] == "#"):
             url = url[:-1]
-        courseObj = iPolyCourse(row[2], row[1], row[5], row[3], url, row[6])
+        courseObj = iPolyCourse(row[2], row[1], row[5], row[3], url, row[6], row[4])
         courseList.append(courseObj)
         
         if (url.startswith("http://www.np.edu.sg/soe/courses/ebm/")):
@@ -98,17 +100,17 @@ class PolySpider(scrapy.Spider):
             courseObj.url2 = mobile_Ext
                 
             courseNPList.append(courseObj)
-            #courseURL.append(mobile_Ext)
+            courseURL.append(mobile_Ext)
             #courseURL.append(url)
         elif (url.startswith("http://www.nyp.edu.sg")):
             courseNYPList.append(courseObj)
-            #courseURL.append(url)
+            courseURL.append(url)
         elif (url.startswith("http://www.tp.edu.sg")):
             courseTPList.append(courseObj)
             #courseURL.append(url)
         elif (url.startswith("http://www.rp.edu.sg/")):
             courseRPList.append(courseObj)   
-            courseURL.append(url)
+            #courseURL.append(url)
         elif (url.startswith("http://www.sp.edu.sg")):
             try:
                 #courseURL.append(spCourseURL[row[2]])
@@ -234,7 +236,6 @@ class PolySpider(scrapy.Spider):
                         elif (len(mod.xpath(".//td[3]//span[@class='grdModuletext']//text()").extract()) > 0):
                             structDict[currentYear][currentSem].append(self.processString(mod.xpath(".//td[3]//span[@class='grdModuletext']//text()").extract()[0]).strip())
                     courseObj.setStructure(json.dumps(structDict))
-                    pprint.pprint(structDict)
         
         # Republic Poly Course
         if (response.url.lower().startswith("http://www.rp.edu.sg/")): 
@@ -307,7 +308,6 @@ class PolySpider(scrapy.Spider):
                                         
                             i +=1
                     courseObj.setStructure(json.dumps(structDict))
-                    pprint.pprint(structDict)
                         
         # Singapore Poly Course
         if (response.url.lower().startswith("http://m.sp.edu.sg/dare-s88")): 
@@ -349,6 +349,7 @@ class PolySpider(scrapy.Spider):
                             structDict['Year 3 Elective (Choose One)'].append(mod.extract())
                         '''
                         courseObj.setStructure(json.dumps(structDict))
+                        
         
         # Temasek Poly Course
         if (response.url.lower().startswith("http://www.tp.edu.sg/")): 
@@ -404,6 +405,9 @@ class PolySpider(scrapy.Spider):
                                     for mod in response.xpath("//div[@id='tab6']//table[" + str(i) + "]//tbody[1]//tr//td//a//text()"): # Extract from Diploma Subjects
                                         structDict['4:Electives'][elective.extract()].append(self.processString(mod.extract()).strip())
                                 i+=1
+                        courseObj.setStructure(json.dumps(structDict))
+        
+        
                         
     #END of processCourseInfo()
     
@@ -425,6 +429,11 @@ class PolySpider(scrapy.Spider):
                     result = result + "\\r\\n"
             
         return result
+    
+    def closed(self, reason):
+        with open("./PolyData.pkl", "wb") as pickle_file:
+            for courseObj in self.courseNYPList:
+                pickle.dump(courseObj, pickle_file, pickle.HIGHEST_PROTOCOL)
 
 configure_logging()
 runner = CrawlerRunner()

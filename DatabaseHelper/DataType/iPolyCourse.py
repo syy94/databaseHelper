@@ -11,7 +11,7 @@ Rmbr to include object type checking for writing/deleting of entries to datastor
 different types of objects. So all poly full time courses will have its own datastore and so on
 '''
 
-class iPolyCourse:
+class iPolyCourse(object):
     
     courseID = ""       # Course ID             (E.g. T51)
     polytechnic = ""    # Polytechnic Acronym   (E.g. NP)
@@ -21,6 +21,7 @@ class iPolyCourse:
     url2 = ""           # Secondary URL         (Second Course URL)
     year = 0            # Year timestamp        (Data is only relevant to specific year)
     intake = 0          # Course Intake         (E.g. 75, requires seperate URL + Data.gov Crawling)
+    cluster = ""        # Course Cluster        (E.g. Engineering
     structure = ""      # Course Structure      (Structure stored in JSON format
     ext_info = ""       # Extra Info            (Course specific only)
     description = ""    # Course Description    (Paragraph on course description - URL Crawling)
@@ -37,13 +38,17 @@ class iPolyCourse:
     '''
     
     
-    def __init__(self, courseID, polytechnic="", score=0, name="", url="", year=0):
+    def __init__(self, courseID, polytechnic="", score=0, name="", url="", year=0, cluster=""):
         self.courseID = courseID # Course ID is mandatory
         self.polytechnic = polytechnic
         self.score = score
         self.name = name
         self.url = url
         self.year = year
+        self.cluster = cluster
+        
+    def __repr__(self):
+        return self
         
     def setDesciption(self, description): 
         self.description = description

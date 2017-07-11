@@ -1,7 +1,7 @@
 from google.appengine.ext import ndb
 
-def insertCourse(course_id, poly, score, name, url, ext_info, course_type, year):
-    entity = model_jae.create_entity(course_id, poly, score, name, url, ext_info, course_type, year)
+def insertCourse(course_id, poly, score, name, url, description, course_type, year, structure):
+    entity = model_jae.create_entity(course_id, poly, score, name, url, description, course_type, year, structure)
     return entity.put()
 
 def delCourse(course_id):
@@ -55,8 +55,8 @@ class entityListBuilder:
     def __init__(self):
         self.list_entity = []
      
-    def add_entity(self, course_id, poly, score, name, url, ext_info, course_type, year):
-        entity = model_jae.create_entity(course_id, poly, score, name, url, ext_info, course_type, year)
+    def add_entity(self, course_id, poly, score, name, url, url2, description, year, structure, cluster, intake):
+        entity = model_jae.create_entity(course_id, poly, score, name, url, url2, description, year, structure, cluster, intake)
         
         self.list_entity.append(entity)
         
@@ -80,22 +80,29 @@ class model_jae(ndb.Model):
     score = ndb.StringProperty() # O' level Score Requirement
     name = ndb.StringProperty() # Course Name
     url = ndb.TextProperty() # Course URL Info
-    ext_info = ndb.StringProperty() # Additional info
-    course_type = ndb.StringProperty()  # course_type = applied sciences, etc
+    url2 = ndb.TextProperty() # Second URL
+    intake = ndb.StringProperty()
+    cluster = ndb.StringProperty()
+    description = ndb.StringProperty() # Course Description
     year = ndb.StringProperty() # The year this entry is collected
+    structure = ndb.StringProperty() # Course structure (JSON)
     
     '''method to easily create an entity'''
     @staticmethod
-    def create_entity(course_id, poly, score, name, url, ext_info, course_type, year):
+    def create_entity(course_id, poly, score, name, url, url2, description, year, structure, cluster, intake):
         entity = model_jae()
+        entity.id = course_id;
         entity.poly = poly;
         entity.score = score;
         entity.name = name;
         entity.url = url;
-        entity.course_type = course_type;
+        entity.url2 = url2
+        entity.description = description
         entity.year = year;
+        entity.structure = structure
+        entity.cluster = cluster
+        entity.intake = intake
      
-        entity.id = course_id;
         entity.key = model_jae.get_key(course_id)
         return entity
     
