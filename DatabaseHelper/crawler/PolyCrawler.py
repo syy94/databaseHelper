@@ -24,7 +24,6 @@ Initial Crawler to extract SP's course data from mobile version
 '''
 class SP_MobileSpider(scrapy.Spider):
     name = "SP_MobileSpider"
-    SPMobile_Dict = {}
     def start_requests(self):
         urls = ['http://m.sp.edu.sg/courses']
 
@@ -32,9 +31,10 @@ class SP_MobileSpider(scrapy.Spider):
             yield scrapy.Request(url=url, callback=self.parse)
     
     def parse(self, response):
+        print "test"
         coursePattern = re.compile("^([A-Z]{1}[0-9]{2})$")  # Match Alphabet + 2 Digits
         Results = response.xpath('//a[@class="courses-box-1"]/@href').extract()
-        with open("./SPMobile.csv", "wb") as csv_file:
+        with open("SPMobile2.csv", "a") as csv_file:
             Results = response.xpath('//a[@class="courses-box-1"]/@href').extract()
             for rows in Results:
                 courseID = "S" + rows[-2:]
@@ -71,7 +71,7 @@ class PolySpider(scrapy.Spider):
     
     # Read custom CSV file containing SP's mobile url and store into Dict
     
-    with open('SPMobile.csv') as csvfile:
+    with open('SPMobile2.csv') as csvfile:
         readCSV = csv.reader(csvfile, delimiter=',')
         for row in readCSV:
             spCourseURL[str(row[0])] = str(row[1])
@@ -101,19 +101,19 @@ class PolySpider(scrapy.Spider):
                 
             courseNPList.append(courseObj)
             courseURL.append(mobile_Ext)
-            #courseURL.append(url)
+            courseURL.append(url)
         elif (url.startswith("http://www.nyp.edu.sg")):
             courseNYPList.append(courseObj)
             courseURL.append(url)
         elif (url.startswith("http://www.tp.edu.sg")):
             courseTPList.append(courseObj)
-            #courseURL.append(url)
+            courseURL.append(url)
         elif (url.startswith("http://www.rp.edu.sg/")):
             courseRPList.append(courseObj)   
-            #courseURL.append(url)
+            courseURL.append(url)
         elif (url.startswith("http://www.sp.edu.sg")):
             try:
-                #courseURL.append(spCourseURL[row[2]])
+                courseURL.append(spCourseURL[row[2]])
                 courseObj.setURL2(spCourseURL[row[2]])
                 courseSPList.append(courseObj)
             except KeyError:

@@ -62,6 +62,9 @@ class iPolyCourse(object):
     def setStructure(self, structure):
         self.structure = structure
         
+    def setIntake(self, intake):
+        self.intake = intake
+        
     def setEmployment(self, employment):
         self.employment = employment # Likely to be serialized into JSON data
     
