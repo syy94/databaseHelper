@@ -2,9 +2,11 @@ import database
 import pickle
 import pprint
 
+from logging import info
 from DataType.iPolyCourse import iPolyCourse
 from flask import Flask, render_template
 from database import entityListBuilder, bulkDeleter
+import logging
 
 app = Flask(__name__)
 
@@ -16,11 +18,13 @@ def main():
 @app.route('/serviceList')
 def serviceList():
     PolyList = []
+    
     try:
-        with open("./PolyData.pkl",'rb') as polyFile:
+        with open("./crawler/PolyData.pkl",'rb') as polyFile:
             while True:                          # loop indefinitely
                 PolyList.append(pickle.load(polyFile))  # add each item from the file to a list
     except EOFError:  
+        info('EOFError')
         pass
     
     builder = entityListBuilder()
@@ -37,7 +41,8 @@ def serviceList():
                            , courseObj.cluster
                            , courseObj.intake
                            )
-    builder.add_to_database()
+    logging.info('end')
+    logging.info(builder.add_to_database())
     
     return 'refreshed database'
     

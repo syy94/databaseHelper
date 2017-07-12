@@ -18,6 +18,7 @@ from DataType.iPolyCourse import iPolyCourse
 from twisted.internet import reactor, defer
 from scrapy.crawler import CrawlerRunner
 from scrapy.utils.log import configure_logging
+import logging
 
 '''
 Initial Crawler to extract SP's course data from mobile version
@@ -85,6 +86,7 @@ class PolySpider(scrapy.Spider):
             url = url[1:]
         if (url[-1] == "#"):
             url = url[:-1]
+            
         courseObj = iPolyCourse(row[2], row[1], row[5], row[3], url, row[6], row[4])
         courseList.append(courseObj)
         
@@ -101,19 +103,19 @@ class PolySpider(scrapy.Spider):
                 
             courseNPList.append(courseObj)
             courseURL.append(mobile_Ext)
-            #courseURL.append(url)
+            courseURL.append(url)
         elif (url.startswith("http://www.nyp.edu.sg")):
             courseNYPList.append(courseObj)
             courseURL.append(url)
         elif (url.startswith("http://www.tp.edu.sg")):
             courseTPList.append(courseObj)
-            #courseURL.append(url)
+            courseURL.append(url)
         elif (url.startswith("http://www.rp.edu.sg/")):
             courseRPList.append(courseObj)   
-            #courseURL.append(url)
+            courseURL.append(url)
         elif (url.startswith("http://www.sp.edu.sg")):
             try:
-                #courseURL.append(spCourseURL[row[2]])
+                courseURL.append(spCourseURL[row[2]])
                 courseObj.setURL2(spCourseURL[row[2]])
                 courseSPList.append(courseObj)
             except KeyError:
@@ -426,13 +428,13 @@ class PolySpider(scrapy.Spider):
             if (len(str) > 1):
                 result = result + str
                 if (str[-1] == '.'): # Make sure its really end of sentence for paragraphing
-                    result = result + "\\r\\n"
+                    result = result + "<br />"
             
         return result
     
     def closed(self, reason):
         with open("./PolyData.pkl", "wb") as pickle_file:
-            for courseObj in self.courseNYPList:
+            for courseObj in self.courseList:
                 pickle.dump(courseObj, pickle_file, pickle.HIGHEST_PROTOCOL)
 
 configure_logging()
