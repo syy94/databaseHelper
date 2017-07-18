@@ -96,6 +96,12 @@ indexes:
   - name: poly
   - name: score
     direction: desc
+    
+- kind: model_jae
+  properties:
+  - name: poly
+  - name: score
+  - name: name
 
 - kind: model_jae
   properties:
