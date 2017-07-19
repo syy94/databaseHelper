@@ -11,6 +11,7 @@ import openpyxl
 import StringIO
 import re
 import json
+import time
 import pickle
 
 from itertools import islice
@@ -18,32 +19,39 @@ from DataType.iPolyCourse import iPolyCourse
 from twisted.internet import reactor, defer
 from scrapy.crawler import CrawlerRunner
 from scrapy.utils.log import configure_logging
+from selenium import webdriver
+from selenium.common.exceptions import NoSuchElementException
 
 '''
 Initial Crawler to extract SP's course data from mobile version
 '''
+SP_MobileDict = {}
+Spider1Completed = False
 class SP_MobileSpider(scrapy.Spider):
     name = "SP_MobileSpider"
+    
     def start_requests(self):
         urls = ['http://m.sp.edu.sg/courses']
-
         for url in urls:
             yield scrapy.Request(url=url, callback=self.parse)
-    
+        
     def parse(self, response):
-        print "test"
+        global SP_MoblieDict
         coursePattern = re.compile("^([A-Z]{1}[0-9]{2})$")  # Match Alphabet + 2 Digits
         Results = response.xpath('//a[@class="courses-box-1"]/@href').extract()
-        with open("SPMobile2.csv", "a") as csv_file:
-            Results = response.xpath('//a[@class="courses-box-1"]/@href').extract()
-            for rows in Results:
-                courseID = "S" + rows[-2:]
-                if (coursePattern.match(courseID)):
-                    csv_file.write(courseID + "," + "http://m.sp.edu.sg/" + rows + "\r\n")
+        for rows in Results:
+            courseID = "S" + rows[-2:]
+            if (coursePattern.match(courseID)):
+                SP_MobileDict[str(courseID)] =   str("http://m.sp.edu.sg/" + rows)
+                
+    def closed(self, reason):
+        global Spider1Completed
+        Spider1Completed = True
+                
                     
 class PolySpider(scrapy.Spider):
-    name = "PolyIntake"
     
+    name = "PolyIntake"
     intakeDict = {}
     courseList = []     # Contains list of all courses, be populated at the end by merging the ones below
     courseNPList = []   # List of NP course to be populated
@@ -69,74 +77,89 @@ class PolySpider(scrapy.Spider):
         xls_NYP
         ]
     
-    # Read custom CSV file containing SP's mobile url and store into Dict
+    def __init__(self):
+        self.driver = webdriver.Firefox()
     
-    with open('SPMobile2.csv') as csvfile:
-        readCSV = csv.reader(csvfile, delimiter=',')
-        for row in readCSV:
-            spCourseURL[str(row[0])] = str(row[1])
-        
-    # Read all info from polytechnic.edu.sg's CSV file and populate whatever we can into courseList objects first.
-    url_AllCourse = 'http://www.polytechnic.edu.sg/api/download/course?id=b434281c-efe6-69f6-9162-ff000003a8ed'
-    cr = csv.reader(urllib2.urlopen(url_AllCourse))
-    for row in islice(cr, 1, None): # Skip first item
-        url = row[7]
-        if (url[0] == "#"): # Some records have trailing # character, dont know why
-            url = url[1:]
-        if (url[-1] == "#"):
-            url = url[:-1]
-        courseObj = iPolyCourse(row[2], row[1], row[5], row[3], url, row[6], row[4])
-        courseList.append(courseObj)
-        
-        if (url.startswith("http://www.np.edu.sg/soe/courses/ebm/")):
-            # Create mobile version of URL
-            mobile_Ext = url[url.find("courses")+8:url.find("/pages")]
-            if (mobile_Ext.find("fulltime") != -1):
-                mobile_Ext = mobile_Ext[len("fulltime/"):]
-            if (mobile_Ext.find("diploma") != -1):
-                mobile_Ext = url[url.find("pages")+6:-5]
-            
-            mobile_Ext = "https://www1.np.edu.sg/EAE/CoursesAtAGlance/Courses/" + mobile_Ext + "/"
-            courseObj.url2 = mobile_Ext
-                
-            courseNPList.append(courseObj)
-            courseURL.append(mobile_Ext)
-            courseURL.append(url)
-        elif (url.startswith("http://www.nyp.edu.sg")):
-            courseNYPList.append(courseObj)
-            courseURL.append(url)
-        elif (url.startswith("http://www.tp.edu.sg")):
-            courseTPList.append(courseObj)
-            courseURL.append(url)
-        elif (url.startswith("http://www.rp.edu.sg/")):
-            courseRPList.append(courseObj)   
-            courseURL.append(url)
-        elif (url.startswith("http://www.sp.edu.sg")):
-            try:
-                courseURL.append(spCourseURL[row[2]])
-                courseObj.setURL2(spCourseURL[row[2]])
-                courseSPList.append(courseObj)
-            except KeyError:
-                print "Course ID: " + row[2] + " not found!"
-            
     def start_requests(self):
-        urls = []
-        urls.extend(self.intakeURL)
-        urls.extend(self.courseURL)
-        for url in urls:
+        global SP_MobileDict
+        global Spider1Completed
+        
+        while (not Spider1Completed):
+            print "Waiting for SP Mobile Crawler..."
+            time.sleep(1) # Wait for initial crawler to populate SP's mobile websites first
+        
+        self.spCourseURL = SP_MobileDict
+            
+        # Read all info from polytechnic.edu.sg's CSV file and populate whatever we can into courseList objects first.
+        url_AllCourse = 'http://www.polytechnic.edu.sg/api/download/course?id=b434281c-efe6-69f6-9162-ff000003a8ed'
+        cr = csv.reader(urllib2.urlopen(url_AllCourse))
+        for row in islice(cr, 1, None): # Skip first item
+            url = row[7]
+            if (url[0] == "#"): # Some records have trailing # character, dont know why
+                url = url[1:]
+            if (url[-1] == "#"):
+                url = url[:-1]
+            courseObj = iPolyCourse(row[2], row[1], row[5], row[3], url, row[6], row[4])
+            self.courseList.append(courseObj)
+            
+            if (url.startswith("http://www.np.edu.sg/soe/courses/ebm/")):
+                # Create mobile version of URL
+                mobile_Ext = url[url.find("courses")+8:url.find("/pages")]
+                if (mobile_Ext.find("fulltime") != -1):
+                    mobile_Ext = mobile_Ext[len("fulltime/"):]
+                if (mobile_Ext.find("diploma") != -1):
+                    mobile_Ext = url[url.find("pages")+6:-5]
+                
+                mobile_Ext = "https://www1.np.edu.sg/EAE/CoursesAtAGlance/Courses/" + mobile_Ext + "/"
+                courseObj.setURL2(mobile_Ext)
+                    
+                self.courseNPList.append(courseObj)
+                #self.self.courseURL.append(mobile_Ext)
+                #self.courseURL.append(url)
+            elif (url.startswith("http://www.nyp.edu.sg/schools/sbm/full-time-courses/accountancy-and-finance.html")):
+                self.courseNYPList.append(courseObj)
+                self.courseURL.append(url)
+            elif (url.startswith("http://www.tp.edu.sg")):
+                self.courseTPList.append(courseObj)
+                #self.courseURL.append(url)
+            elif (url.startswith("http://www.rp.edu.sg/")):
+                self.courseRPList.append(courseObj)   
+                #self.courseURL.append(url)
+            elif (url.startswith("http://www.sp.edu.sg")):
+                try:
+                    #self.courseURL.append(self.spCourseURL[row[2]])
+                    courseObj.setURL2(self.spCourseURL[row[2]])
+                    self.courseSPList.append(courseObj)
+                except KeyError:
+                    print "Course ID: " + row[2] + " not found!"
+                    
+                    
+        for url in self.intakeURL:
+            yield scrapy.Request(url=url, callback=self.parse)
+        for url in self.courseURL:
             yield scrapy.Request(url=url, callback=self.parse)
     #END of start_requests()
 
     def parse(self, response):
         
         if response.url in self.intakeURL:
-            self.processIntakeInto(response)
+            self.processIntakeInfo(response)
         else:
-            self.processCourseInfo(response)              
-            #pprint.pprint(self.intakeDict)        
+            if (response.url.startswith("http://www.nyp.edu.sg/schools/")):
+                self.driver.get(response.url)
+                counter = 2
+                while True: # Click all tabs that exist in NYP Course pages
+                    try:
+                        self.driver.find_element_by_xpath('(//div[@class="panel-heading accordionPanelHeader"])[' + str(counter) + ']').click()
+                        counter +=1
+                    except NoSuchElementException:
+                        break
+                time.sleep(1)
+                response = response.replace(body=self.driver.page_source)
+            self.processCourseInfo(response)        
     #END of parse()
     
-    def processIntakeInto(self, response):
+    def processIntakeInfo(self, response):
         coursePattern = re.compile("^([A-Z]{1}[0-9]{2})$")  # Match Alphabet + 2 Digits
         intakePattern = re.compile("^([0-9]{1,3})$")  # 1-3 Digits
         
@@ -196,6 +219,8 @@ class PolySpider(scrapy.Spider):
                 courseIntake = str(sheet['C' + str(i)].value)
                 if (coursePattern.match(courseID) and intakePattern.match(courseIntake)):
                     self.intakeDict[courseID] = courseIntake
+                    
+        
     #END of processIntakeInfo()
     
     def processCourseInfo(self, response):
@@ -310,7 +335,7 @@ class PolySpider(scrapy.Spider):
                     courseObj.setStructure(json.dumps(structDict))
                         
         # Singapore Poly Course
-        if (response.url.lower().startswith("http://m.sp.edu.sg/dare-s88")): 
+        if (response.url.lower().startswith("http://m.sp.edu.sg/")): 
             for courseObj in self.courseSPList:
                 if (courseObj.url2 == response.url):
                     courseObj.setDesciption(self.processStringList(response.xpath(".//div[@id='collapseOne']//p[1]//text()").extract()))
@@ -329,28 +354,53 @@ class PolySpider(scrapy.Spider):
         if (response.url.lower().startswith("http://www.nyp.edu.sg")): 
             for courseObj in self.courseNYPList:
                 if (courseObj.url == response.url):
-                        # Extract course description
-                        courseObj.setDesciption(self.processStringList(response.xpath(".//section[@class='school-course-about ds-component-margin']//div[@class='ds-richtext']//p//text()").extract()))
-                        # Extract course structure
-                        structDict = {'1:Year 1 Semester 1': [], '2:Year 1 Semester 2': [], '3:Year 2 Semester 1': [], '4:Year 2 Semester 2': [], '5:Year 3 Core': [], '6:Year 3 Elective (Choose One)': []}
-                        for mod in response.xpath("//div[@class='accordion parbase section']//ul[1]//li//text()"):
-                            structDict['1:Year 1 Semester 1'].append(mod.extract())
-                        for mod in response.xpath("//div[@class='accordion parbase section']//ul[2]//li//text()"):
-                            structDict['2:Year 1 Semester 2'].append(mod.extract())
-                        # Further course details extraction not available, as accordion is loaded dynamically through AJAX
-                        '''
-                        for mod in response.xpath("//div[@class='accordion parbase section']//ul[3]//li//text()"):
-                            structDict['Year 2 Semester 1'].append(mod.extract())
-                        for mod in response.xpath("//div[@class='accordion parbase section']//ul[4]//li//text()"):
-                            structDict['Year 2 Semester 2'].append(mod.extract())
-                        for mod in response.xpath("//div[@class='accordion parbase section']//ul[5]//li//text()"):
-                            structDict['Year 3 Core'].append(mod.extract())
-                        for mod in response.xpath("//div[@class='accordion parbase section']//ul[6]//li//text()"):
-                            structDict['Year 3 Elective (Choose One)'].append(mod.extract())
-                        '''
-                        courseObj.setStructure(json.dumps(structDict))
+                    # Extract course description
+                    courseObj.setDesciption(self.processStringList(response.xpath(".//section[@class='school-course-about ds-component-margin']//div[@class='ds-richtext']//p//text()").extract()))
+                    # Extract course structure
+                    structDict = {}
+                    yearList = []
+                    subCatList = [] 
+                    for yearPanel in response.xpath("//h4[@class='panel-title']//text()"): # Collect all Year panel title
+                        yearCat = self.processString(yearPanel.extract()).strip()
+                        if (len(yearCat) > 0):
+                            yearList.append(yearCat)
+                    for mod in response.xpath("//div[@class='panel-body']//b//text()"): # Collect all sub category title
+                        subCat = self.processString(mod.extract()).strip()
+                        if (len(subCat) > 0):
+                            subCatList.append(subCat)
+                    year = 0
+                    subYear = 0
+                    
+                    if (len(subCatList) > 1):
+                        for yearPanel in response.xpath("//div[@class='panel-body']"): # For each accordion tab
+                            structDict[yearList[year]] = {}
+                            for category in yearPanel.xpath(".//ul"): # For each list in accordion tab
+                                try:
+                                    structDict[yearList[year]][subCatList[subYear]] = []
+                                except IndexError:
+                                            print "Index Error: Out of Range"
+                                            print response.url
+                                for mod in category.xpath(".//li//text()"):
+                                    if (len(self.processString(mod.extract()).strip()) > 0):
+                                            structDict[yearList[year]][subCatList[subYear]].append(self.processString(mod.extract()).strip())
+                                exception = str(category.xpath(".//li//text()").extract()[0]) # Dont skip FYP or ITP option list
+                                if (not exception.startswith("Teaching") and exception.startswith("Internship")):
+                                    subYear +=1
+                            year +=1
+                    else:
+                        # For special courses like: http://www.nyp.edu.sg/schools/seg/full-time-courses/aerospace-electrical-electronics-programme.html
+                        for yearPanel in response.xpath("//div[@class='panel-body']"): # For each accordion tab
+                            structDict[yearList[year]] = []
+                            for mod in yearPanel.xpath(".//li//text()"):
+                                if (len(self.processString(mod.extract()).strip()) > 0):
+                                    try:
+                                        structDict[yearList[year]].append(self.processString(mod.extract()).strip())
+                                    except IndexError:
+                                        print "Index Error: Out of Range"
+                                        print response.url
+                            year +=1
+                    courseObj.setStructure(json.dumps(structDict))
                         
-        
         # Temasek Poly Course
         if (response.url.lower().startswith("http://www.tp.edu.sg/")): 
             for courseObj in self.courseTPList:
@@ -431,8 +481,10 @@ class PolySpider(scrapy.Spider):
         return result
     
     def closed(self, reason):
+        self.driver.close()
         with open("./PolyData.pkl", "wb") as pickle_file:
             for courseObj in self.courseNYPList:
+                courseObj.setIntake(self.intakeDict[courseObj.courseID])
                 pickle.dump(courseObj, pickle_file, pickle.HIGHEST_PROTOCOL)
 
 configure_logging()
