@@ -1,20 +1,32 @@
-import csv
-import urllib2
 from database import entityListBuilder 
+import pickle
+from logging import info
 
-url = 'http://www.polytechnic.edu.sg/api/download/course?id=b434281c-efe6-69f6-9162-ff000003a8ed'
-response = urllib2.urlopen(url)
-cr = csv.reader(response)
 
+PolyList = []
+    
+try:
+    with open("./crawler/PolyData.pkl", 'rb') as polyFile:
+        while True:  # loop indefinitely
+            PolyList.append(pickle.load(polyFile))  # add each item from the file to a list
+except EOFError:  
+    info('EOF reached closing file to prevent mem leak')
+    polyFile.close()
+    pass
+    
 builder = entityListBuilder()
-for row in cr:
-    builder.add_entity(row[2] # Course ID
-                       , row[1] # Poly Acronym
-                       , row[5] # O'lv Score
-                       , row[3] # Course Name
-                       , row[7] # URL
-                       , 'N/A' # Additional Info
-                       , row[4] # Course Type
-                       , row[6] # Year
-                       )
+for courseObj in PolyList:
+    builder.add_entity(
+        courseObj.courseID
+        , courseObj.polytechnic
+        , courseObj.score
+        , courseObj.name
+        , courseObj.url 
+        , courseObj.url2 
+        , courseObj.description
+        , courseObj.year
+        , courseObj.structure
+        , courseObj.cluster
+        , courseObj.intake
+    )
 builder.add_to_database()

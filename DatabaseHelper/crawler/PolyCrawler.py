@@ -13,6 +13,7 @@ import re
 import json
 import time
 import pickle
+import logging
 
 from itertools import islice
 from DataType.iPolyCourse import iPolyCourse
