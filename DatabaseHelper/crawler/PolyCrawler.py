@@ -114,20 +114,20 @@ class PolySpider(scrapy.Spider):
                 courseObj.setURL2(mobile_Ext)
                     
                 self.courseNPList.append(courseObj)
-                #self.self.courseURL.append(mobile_Ext)
-                #self.courseURL.append(url)
-            elif (url.startswith("http://www.nyp.edu.sg/schools/sbm/full-time-courses/accountancy-and-finance.html")):
+                self.courseURL.append(mobile_Ext)
+                self.courseURL.append(url)
+            elif (url.startswith("http://www.nyp.edu.sg")):
                 self.courseNYPList.append(courseObj)
                 self.courseURL.append(url)
             elif (url.startswith("http://www.tp.edu.sg")):
                 self.courseTPList.append(courseObj)
-                #self.courseURL.append(url)
+                self.courseURL.append(url)
             elif (url.startswith("http://www.rp.edu.sg/")):
                 self.courseRPList.append(courseObj)   
-                #self.courseURL.append(url)
+                self.courseURL.append(url)
             elif (url.startswith("http://www.sp.edu.sg")):
                 try:
-                    #self.courseURL.append(self.spCourseURL[row[2]])
+                    self.courseURL.append(self.spCourseURL[row[2]])
                     courseObj.setURL2(self.spCourseURL[row[2]])
                     self.courseSPList.append(courseObj)
                 except KeyError:
@@ -477,13 +477,12 @@ class PolySpider(scrapy.Spider):
                 result = result + str
                 if (str[-1] == '.'): # Make sure its really end of sentence for paragraphing
                     result = result + "\\r\\n"
-            
         return result
     
     def closed(self, reason):
         self.driver.close()
         with open("./PolyData.pkl", "wb") as pickle_file:
-            for courseObj in self.courseNYPList:
+            for courseObj in self.courseList:
                 courseObj.setIntake(self.intakeDict[courseObj.courseID])
                 pickle.dump(courseObj, pickle_file, pickle.HIGHEST_PROTOCOL)
 
