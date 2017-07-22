@@ -16,4 +16,8 @@ try:
 except EOFError:  
     pass
 for test in PolyList:
-    pprint.pprint(test.name)
+    if (test.polytechnic == "TP"):
+        pprint.pprint(test.polytechnic + " | " + test.name)
+        pprint.pprint(test.url)
+        pprint.pprint(test.structure)
+        print "============================================="

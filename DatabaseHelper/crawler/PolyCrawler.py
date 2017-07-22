@@ -22,6 +22,10 @@ from scrapy.crawler import CrawlerRunner
 from scrapy.utils.log import configure_logging
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
+from selenium.common.exceptions import TimeoutException
 
 '''
 Initial Crawler to extract SP's course data from mobile version
@@ -103,15 +107,16 @@ class PolySpider(scrapy.Spider):
             courseObj = iPolyCourse(row[2], row[1], row[5], row[3], url, row[6], row[4])
             self.courseList.append(courseObj)
             
-            if (url.startswith("http://www.np.edu.sg/soe/courses/ebm/")):
+            if (url.startswith("http://www.np.edu.sg")):
                 # Create mobile version of URL
-                mobile_Ext = url[url.find("courses")+8:url.find("/pages")]
+                url2 = url.lower()
+                mobile_Ext = url2[url2.find("courses")+8:url2.find("/pages")]
                 if (mobile_Ext.find("fulltime") != -1):
                     mobile_Ext = mobile_Ext[len("fulltime/"):]
                 if (mobile_Ext.find("diploma") != -1):
-                    mobile_Ext = url[url.find("pages")+6:-5]
+                    mobile_Ext = url2[url2.find("pages")+6:-5]
                 
-                mobile_Ext = "https://www1.np.edu.sg/EAE/CoursesAtAGlance/Courses/" + mobile_Ext + "/"
+                mobile_Ext = "https://www1.np.edu.sg/eae/courses/" + mobile_Ext + "/"
                 courseObj.setURL2(mobile_Ext)
                     
                 self.courseNPList.append(courseObj)
@@ -149,14 +154,19 @@ class PolySpider(scrapy.Spider):
             if (response.url.startswith("http://www.nyp.edu.sg/schools/")):
                 self.driver.get(response.url)
                 counter = 2
-                while True: # Click all tabs that exist in NYP Course pages
-                    try:
-                        self.driver.find_element_by_xpath('(//div[@class="panel-heading accordionPanelHeader"])[' + str(counter) + ']').click()
-                        counter +=1
-                    except NoSuchElementException:
-                        break
-                time.sleep(1)
-                response = response.replace(body=self.driver.page_source)
+                try:
+                    while True: # Click all tabs that exist in NYP Course pages
+                        element_present = EC.presence_of_element_located((By.ID, 'main_bg')) # Wait for the page to load
+                        WebDriverWait(self.driver, 5).until(element_present) # 5 secs timeout
+                        try:
+                            self.driver.find_element_by_xpath('(//div[@class="panel-heading accordionPanelHeader"])[' + str(counter) + ']').click()
+                            counter +=1
+                            time.sleep(1)
+                        except NoSuchElementException:
+                            break
+                    response = response.replace(body=self.driver.page_source)
+                except TimeoutException:
+                    print "Timed out waiting for page to load: " + response.url
             self.processCourseInfo(response)        
     #END of parse()
     
@@ -356,7 +366,11 @@ class PolySpider(scrapy.Spider):
             for courseObj in self.courseNYPList:
                 if (courseObj.url == response.url):
                     # Extract course description
-                    courseObj.setDesciption(self.processStringList(response.xpath(".//section[@class='school-course-about ds-component-margin']//div[@class='ds-richtext']//p//text()").extract()))
+                    for desc in response.xpath(".//div[@class='list-content col-lg-12']//div[@class='ds-richtext']//p//text()"):
+                        descStr = self.processString(desc.extract()).strip()
+                        if (len(descStr) > 0):
+                            courseObj.description = courseObj.description + descStr + "\r\n"
+                    pprint.pprint(courseObj.description)
                     # Extract course structure
                     structDict = {}
                     yearList = []
@@ -384,7 +398,7 @@ class PolySpider(scrapy.Spider):
                                 for mod in category.xpath(".//li//text()"):
                                     if (len(self.processString(mod.extract()).strip()) > 0):
                                             structDict[yearList[year]][subCatList[subYear]].append(self.processString(mod.extract()).strip())
-                                exception = str(category.xpath(".//li//text()").extract()[0]) # Dont skip FYP or ITP option list
+                                exception = self.processString(category.xpath(".//li//text()").extract()[0]) # Dont skip FYP or ITP option list
                                 if (not exception.startswith("Teaching") and exception.startswith("Internship")):
                                     subYear +=1
                             year +=1
@@ -484,7 +498,10 @@ class PolySpider(scrapy.Spider):
         self.driver.close()
         with open("./PolyData.pkl", "wb") as pickle_file:
             for courseObj in self.courseList:
-                courseObj.setIntake(self.intakeDict[courseObj.courseID])
+                if (courseObj.courseID in self.intakeDict):
+                    courseObj.setIntake(self.intakeDict[courseObj.courseID])
+                if (not len(courseObj.description) > 0):
+                    courseObj.setDesciption("No information available")
                 pickle.dump(courseObj, pickle_file, pickle.HIGHEST_PROTOCOL)
 
 configure_logging()

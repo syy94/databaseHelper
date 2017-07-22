@@ -1,12 +1,10 @@
-1500487984327	geckodriver	INFO	geckodriver 0.18.0
-1500487984336	geckodriver	INFO	Listening on 127.0.0.1:50716
-1500487986389	geckodriver::marionette	INFO	Starting browser C:\Program Files (x86)\Mozilla Firefox\firefox.exe with args ["-marionette"]
-1500487988004	Marionette	INFO	Listening on port 50724
-1500487988408	Marionette	WARN	TLS certificate errors will be ignored for this session
-1500487973442	Marionette	INFO	Ceased listening
-s thrown and uncaught in a Task.
-
-Full message: TypeError: NetworkError when attempting to fetch resource.
+1500709084376	geckodriver	INFO	geckodriver 0.18.0
+1500709084382	geckodriver	INFO	Listening on 127.0.0.1:61194
+1500709086459	geckodriver::marionette	INFO	Starting browser C:\Program Files (x86)\Mozilla Firefox\firefox.exe with args ["-marionette"]
+1500709087946	Marionette	INFO	Listening on port 61207
+1500709088034	Marionette	WARN	TLS certificate errors will be ignored for this session
+1500709167800	addons.productaddons	WARN	Failed downloading XML, status: 0, reason: timeout
+sage: TypeError: NetworkError when attempting to fetch resource.
 Full stack: 
 *************************
 1500481414749	Marionette	INFO	Ceased listening
