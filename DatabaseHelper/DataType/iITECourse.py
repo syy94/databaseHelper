@@ -2,9 +2,16 @@
 Created on May 20, 2017
 
 @author: Choony
+
+Initial Note - To be removed
+All objects be stored in DataType folder, naming sequences will all begin with 'i' to indicate instance objects
+It is likely that we will expand to Diploma - Plus Courses, part time courses, ITE/Uni courses and so on. 
+Hence, all data types will be stored here for naming & field type consistency, while backend can be written seperately.
+Rmbr to include object type checking for writing/deleting of entries to datastore, likely will expand another datastore to store 
+different types of objects. So all poly full time courses will have its own datastore and so on
 '''
 
-class iPolyCourse(object):
+class iITECourse(object):
     
     courseID = ""       # Course ID             (E.g. T51)
     polytechnic = ""    # Polytechnic Acronym   (E.g. NP)
