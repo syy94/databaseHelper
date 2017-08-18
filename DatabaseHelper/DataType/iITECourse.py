@@ -13,22 +13,16 @@ different types of objects. So all poly full time courses will have its own data
 
 class iITECourse(object):
     
-    courseID = ""       # Course ID             (E.g. T51)
-    polytechnic = ""    # Polytechnic Acronym   (E.g. NP)
-    score = 0           # O' Level Score        (E.g. 12)
-    name  = ""          # Course name           (E.g. Diploma In ABC)
+    name  = ""          # Course name           (E.g. Higher Nitec in Accounting)
+    requirement = ""    # Grade requirements    (In JSON Listing)
     url = ""            # Course URL            (Direct link to school site)
-    url2 = ""           # Secondary URL         (Second Course URL)
-    year = 0            # Year timestamp        (Data is only relevant to specific year)
-    intake = 0          # Course Intake         (E.g. 75, requires seperate URL + Data.gov Crawling)
-    cluster = ""        # Course Cluster        (E.g. Engineering
     structure = ""      # Course Structure      (Structure stored in JSON format
     ext_info = ""       # Extra Info            (Course specific only)
     description = ""    # Course Description    (Paragraph on course description - URL Crawling)
     prospect = ""       # Career Prospect       (Paragraph on Career Prospect - URL Crawling)
     employment = ""     # Employment Data       (Data gathered regarding employment - DEEP Web Crawling) 
     metatag = ""        # Meta data             (Keywords extracted from meta tags)
-    timestamp = 0        # Unix Timestamp        (Timestamp for data extraction date)
+    timestamp = 0       # Unix Timestamp        (Timestamp for data extraction date)
     
     '''
     Note: ext_info & employment will be leaved blank for now will further plans, take them as reserved space. 
@@ -58,14 +52,8 @@ class iITECourse(object):
     def setProspect(self, prospect):
         self.prospect = prospect
         
-    def setURL2(self, url2):
-        self.url2 = url2
-        
     def setStructure(self, structure):
         self.structure = structure
-        
-    def setIntake(self, intake):
-        self.intake = intake
         
     def setMeta(self, meta):
         self.metatag = meta
